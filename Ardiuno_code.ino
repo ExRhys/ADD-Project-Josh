@@ -1,28 +1,71 @@
 #include <Servo.h>
-#include <PID_v1.h>
+//#include <PID_v1.h>
 #include <Stepper.h>
 #include <Wire.h>
-#include <VL53L1X.h>
+//#include <VL53L1X.h>
 
 Servo theta;  // create servo object to control a servo
-Stepper myStepper(stepsPerRevolution, 8, 10, 9, 11) ;
-const uint8_t sensorCount = 2;
-const uint8_t xshutPins[sensorCount] = {4, 5};
-VL53L1X sensors[sensorCount];
+Stepper myStepper(400, 8, 10, 9, 11);
+//const uint8_t sensorCount = 2;
+//const uint8_t xshutPins[sensorCount] = {4, 5};
+//VL53L1X sensors[sensorCount];
 
 int crane_point = 0;
-int crane_contro[2][3] = { {90, 20, 15}, {180, 15, 10} }; //row is for option, then the 3 item array is rotation, in and out then height
-int crane_height= 0
+int crane_control[2][3] = { {90, 20, 15}, {180, 15, 10} }; //row is for option, then the 3 item array is rotation, in and out then height
+int crane_height = 0;
 int stepCount = 0;
+int sensor_constant = 10;
 
 double Setpoint, Input, Output;
 double Kp=2, Ki=5, Kd=1;
-PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+//PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
 
+void crane_theta(int point) {
+  theta.write(crane_control[point][0]);
+}
+
+int* distance_sensor() {
+  int readings[2] = {0,0};// {sensors[0].read(),sensors[1].read()};
+  return readings;
+}
+
+void crane_depth(int point) {
+  int* depths = distance_sensor();
+  Input = (depths[0] + sensor_constant-depths[1])/2;
+  Setpoint = crane_control[point][1];
+  //myPID.Compute();
+  analogWrite(1, Output); //change PIN_OUTPUT to the output pin
+}
+
+void crane_change_height(int point) {
+  if (crane_control[point][2] > stepCount) {
+    myStepper.step(20);
+    stepCount++;
+  } else {
+    myStepper.step(-20);
+    stepCount--;
+  }
+}
+
+void crane_loop() {
+  crane_point = digitalRead(8);
+  crane_theta(crane_point);
+  //crane_change_height(crane_point);
+  //crane_depth(crane_point);
+}
+
+void setup() {
+  pinMode(8, INPUT_PULLUP);
+  crane_setup();
+}
+
+void loop() {
+  crane_loop();
+}
 
 void crane_setup() {
-  theta.attach(9);  // attaches the servo on pin 9 to the servo object  
-  myStepper.setSpeed(400)
+  theta.attach(11);  // attaches the servo on pin 9 to the servo object  
+  /*myStepper.setSpeed(400)
 
   while (!Serial) {}
   Serial.begin(115200);
@@ -60,44 +103,6 @@ void crane_setup() {
 
     sensors[i].startContinuous(50);  
   }
-}
 
-void crane_theta(point) {
-  theta.write(crane_control[point][0])
-}
-
-int* distance_sensor() {
-  return {sensors[0].read(),sensors[1].read()}
-}
-
-void crane_depth(point) {
-  int* depths = distance_sensor();
-  input = (depths[0] + sensor_constant-depths[1])/2
-  Setpoint = crane_control[point][1];
-  myPID.Compute();
-  analogWrite(PIN_OUTPUT, Output); //change PIN_OUTPUT to the output pin
-}
-
-void crane_height(point) {
-  if (crane_control[point][2] > stepCount) {
-    myStepper.step(20);
-    stepCount++;
-  } else {
-    myStepper.step(-20);
-    stepCount--;
-  }
-}
-
-void crane_loop() {
-  crane_theta(crane_point);
-  crane_height(crane_point);
-  crane_depth(crane_point);
-}
-
-void setup() {
-  crane_setup();
-}
-
-void loop() {
-  crane_loop();
+  */
 }
