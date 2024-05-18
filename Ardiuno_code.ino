@@ -1,11 +1,27 @@
 #include <Servo.h>
 //#include <PID_v1.h>
-#include <Stepper.h>
+#include "AccelStepper.h"
 #include <Wire.h>
+#include <SparkFun_TB6612.h>
 //#include <VL53L1X.h>
 
+#define AIN1 2
+#define AIN2 4
+#define PWMA 5
+#define STBY 9
+
+#define motorPin1  8      // IN1 on the ULN2003 driver
+#define motorPin2  9      // IN2 on the ULN2003 driver
+#define motorPin3  10     // IN3 on the ULN2003 driver
+#define motorPin4  11     // IN4 on the ULN2003 driver
+
+#define MotorInterfaceType 8
+
 Servo theta;  // create servo object to control a servo
-Stepper myStepper(400, 8, 10, 9, 11);
+AccelStepper craneStepper = AccelStepper(MotorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
+
+const int offsetA = 1;
+Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
 //const uint8_t sensorCount = 2;
 //const uint8_t xshutPins[sensorCount] = {4, 5};
 //VL53L1X sensors[sensorCount];
@@ -30,32 +46,39 @@ int* distance_sensor() {
 }
 
 void crane_depth(int point) {
-  int* depths = distance_sensor();
+  /*int* depths = distance_sensor();
   Input = (depths[0] + sensor_constant-depths[1])/2;
   Setpoint = crane_control[point][1];
   //myPID.Compute();
-  analogWrite(1, Output); //change PIN_OUTPUT to the output pin
-}
+  analogWrite(1, Output); //change PIN_OUTPUT to the output pin*/
 
-void crane_change_height(int point) {
-  if (crane_control[point][2] > stepCount) {
-    myStepper.step(20);
-    stepCount++;
+  if (point) {
+    motor1.drive(50);
   } else {
-    myStepper.step(-20);
-    stepCount--;
+    motor1.drive(-50);
   }
 }
 
+void crane_change_height(int point) {
+  if (point) {//crane_control[point][2] > stepCount) {
+    craneStepper.setSpeed(1000);
+  } else {
+    craneStepper.setSpeed(-1000);
+  }
+  craneStepper.runSpeed();
+}
+
 void crane_loop() {
-  crane_point = digitalRead(8);
+  crane_point = digitalRead(4);
+  Serial.println(crane_point);
   crane_theta(crane_point);
-  //crane_change_height(crane_point);
+  crane_change_height(crane_point);
   //crane_depth(crane_point);
 }
 
 void setup() {
-  pinMode(8, INPUT_PULLUP);
+  Serial.begin(9600);
+  pinMode(4, INPUT_PULLUP);
   crane_setup();
 }
 
@@ -64,8 +87,10 @@ void loop() {
 }
 
 void crane_setup() {
-  theta.attach(11);  // attaches the servo on pin 9 to the servo object  
-  /*myStepper.setSpeed(400)
+  theta.attach(3);  // attaches the servo on pin 9 to the servo object  
+  craneStepper.setMaxSpeed(1000);
+  craneStepper.setCurrentPosition(0);
+  /*
 
   while (!Serial) {}
   Serial.begin(115200);
