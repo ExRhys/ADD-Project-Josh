@@ -1,9 +1,9 @@
 #include <Servo.h>
-//#include <PID_v1.h>
+#include <PID_v1.h>
 #include "AccelStepper.h"
 #include <Wire.h>
 #include <SparkFun_TB6612.h>
-//#include <VL53L1X.h>
+#include <VL53L1X.h>
 
 #define AIN1 2
 #define AIN2 4
@@ -22,9 +22,9 @@ AccelStepper craneStepper = AccelStepper(MotorInterfaceType, motorPin1, motorPin
 
 const int offsetA = 1;
 Motor motor1 = Motor(AIN1, AIN2, PWMA, offsetA, STBY);
-//const uint8_t sensorCount = 2;
-//const uint8_t xshutPins[sensorCount] = {4, 5};
-//VL53L1X sensors[sensorCount];
+const uint8_t sensorCount = 2;
+const uint8_t xshutPins[sensorCount] = {4, 5};
+VL53L1X sensors[sensorCount];
 
 int crane_point = 0;
 int crane_control[2][3] = { {90, 20, 15}, {180, 15, 10} }; //row is for option, then the 3 item array is rotation, in and out then height
@@ -60,10 +60,10 @@ void crane_depth(int point) {
 }
 
 void crane_change_height(int point) {
-  if (point) {//crane_control[point][2] > stepCount) {
-    craneStepper.setSpeed(1000);
-  } else {
+  if (crane_control[point][2] > craneStepper.currentPosition()) {
     craneStepper.setSpeed(-1000);
+  } else if (crane_control[point][2] < craneStepper.currentPosition()) {
+    craneStepper.setSpeed(1000);
   }
   craneStepper.runSpeed();
 }
@@ -90,7 +90,6 @@ void crane_setup() {
   theta.attach(3);  // attaches the servo on pin 9 to the servo object  
   craneStepper.setMaxSpeed(1000);
   craneStepper.setCurrentPosition(0);
-  /*
 
   while (!Serial) {}
   Serial.begin(115200);
@@ -128,6 +127,4 @@ void crane_setup() {
 
     sensors[i].startContinuous(50);  
   }
-
-  */
 }
