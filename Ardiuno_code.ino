@@ -21,8 +21,8 @@ Servo theta;  // create servo object to control a servo
 AccelStepper craneStepper = AccelStepper(MotorInterfaceType, motorPin1, motorPin3, motorPin2, motorPin4);
 Stepper craneDepth(200, inA, inB, inC, inD);
 
-const uint8_t sensorCount = 1;
-const uint8_t xshutPins[sensorCount] = {12}; //12 and 13
+const uint8_t sensorCount = 2;
+const uint8_t xshutPins[sensorCount] = {12,l3}; //12 and 13
 VL53L1X sensors[sensorCount];
 
 int crane_point = 0;
@@ -64,14 +64,15 @@ void crane_change_height(int point) {
 }
 
 void crane_loop() {
-  crane_point = digitalRead(4);
-  crane_theta(crane_point);
-  crane_change_height(crane_point);
+  crane_point = digitalRead(0);
+  //crane_theta(crane_point);
+  //crane_change_height(crane_point);
   crane_depth(crane_point);
 }
 
 void setup() {
-  pinMode(4, INPUT_PULLUP);
+  pinMode(0, INPUT_PULLUP);
+  pinMode(1, OUTPUT);
   crane_setup();
 }
 
@@ -83,6 +84,8 @@ void crane_setup() {
   theta.attach(3);  // attaches the servo on pin 9 to the servo object  
   craneStepper.setMaxSpeed(1000);
   craneStepper.setCurrentPosition(0);
+
+  digitalWrite(3, HIGH);
 
   myPID.SetMode(AUTOMATIC);
   craneDepth.setSpeed(10);
